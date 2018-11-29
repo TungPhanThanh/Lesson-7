@@ -7,13 +7,13 @@ import android.view.View;
 import android.view.ViewGroup;
 import android.widget.TextView;
 
-import java.util.ArrayList;
+import java.util.List;
 
 public class RepoAdapter extends RecyclerView.Adapter<RepoAdapter.viewHolder> {
-    private ArrayList<Repo> mRepos;
+    private List<Repo> mRepos;
     private LayoutInflater mLayoutInflater;
 
-    public RepoAdapter(ArrayList<Repo> mRepos) {
+    public RepoAdapter(List<Repo> mRepos) {
         this.mRepos = mRepos;
     }
 
@@ -37,7 +37,7 @@ public class RepoAdapter extends RecyclerView.Adapter<RepoAdapter.viewHolder> {
         return mRepos != null ? mRepos.size() : 0;
     }
 
-    public class viewHolder extends RecyclerView.ViewHolder {
+    public static class viewHolder extends RecyclerView.ViewHolder {
         private TextView mTextViewId;
         private TextView mTextViewName;
         private TextView mTextViewUrl;

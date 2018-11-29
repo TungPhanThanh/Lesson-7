@@ -6,13 +6,13 @@ import android.os.Bundle;
 import android.support.v7.app.AppCompatActivity;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
-import android.widget.Toast;
 
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.util.ArrayList;
+import java.util.List;
 
 public class MainActivity extends AppCompatActivity {
 
@@ -23,26 +23,20 @@ public class MainActivity extends AppCompatActivity {
     public static final String RESPONSE_URL = "html_url";
     private ProgressDialog mProgressDialog;
     private RecyclerView mRecyclerView;
-    private RepoAdapter mRepoAdapter;
-    private ArrayList<Repo> mListRepos;
-    private String mId;
-    private String mName;
-    private String mHtmlUrl;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        mListRepos = new ArrayList<>();
         mRecyclerView = findViewById(R.id.recycler_view);
         mRecyclerView.setHasFixedSize(true);
         LinearLayoutManager layoutManager = new LinearLayoutManager
                 (this, LinearLayoutManager.VERTICAL, false);
         mRecyclerView.setLayoutManager(layoutManager);
-        new getData().execute();
+        new RepoLoader().execute(URL);
     }
 
-    public class getData extends AsyncTask<Void, Void, Void> {
+    class RepoLoader extends AsyncTask<String, Repo, List<Repo>> {
         @Override
         protected void onPreExecute() {
             super.onPreExecute();
@@ -53,51 +47,39 @@ public class MainActivity extends AppCompatActivity {
         }
 
         @Override
-        protected Void doInBackground(Void... voids) {
-            HttpHandler httpHandler = new HttpHandler();
-            String jsonStr = httpHandler.makeServiceCall(URL);
-
-            if (jsonStr != null) {
-                try {
-                    JSONArray jsonArray = new JSONArray(jsonStr);
-                    for (int i = 0; i < jsonArray.length(); i++) {
-                        JSONObject jsonObject = jsonArray.getJSONObject(i);
-                        mId = jsonObject.getString(RESPONSE_ID);
-                        mName = jsonObject.getString(RESPONSE_NAME);
-                        mHtmlUrl = jsonObject.getString(RESPONSE_URL);
-                        Repo repo = new Repo(mId, mName, mHtmlUrl);
-                        mListRepos.add(repo);
-                    }
-                } catch (final JSONException e) {
-                    runOnUiThread(new Runnable() {
-                        @Override
-                        public void run() {
-                            Toast.makeText(getApplicationContext(),
-                                    "JSON parsing error" + e.getMessage(),
-                                    Toast.LENGTH_LONG).show();
-                        }
-                    });
-                }
-            } else {
-                runOnUiThread(new Runnable() {
-                    @Override
-                    public void run() {
-                        Toast.makeText(getApplicationContext(),
-                                "Couldn't get JSON from server",
-                                Toast.LENGTH_LONG).show();
-                    }
-                });
-            }
-            return null;
+        protected List<Repo> doInBackground(String... urls) {
+            return getData(urls[0]);
         }
 
         @Override
-        protected void onPostExecute(Void aVoid) {
-            super.onPostExecute(aVoid);
+        protected void onPostExecute(List<Repo> repos) {
+            super.onPostExecute(repos);
             if (mProgressDialog.isShowing())
                 mProgressDialog.dismiss();
-            mRepoAdapter = new RepoAdapter(mListRepos);
-            mRecyclerView.setAdapter(mRepoAdapter);
+            RepoAdapter repoAdapter = new RepoAdapter(repos);
+            mRecyclerView.setAdapter(repoAdapter);
+        }
+
+        private List<Repo> getData(String url) {
+            List<Repo> repos = new ArrayList<>();
+            HttpHandler httpHandler = new HttpHandler();
+            String response = httpHandler.makeServiceCall(url);
+            if (response != null) {
+                try {
+                    JSONArray jsonArray = new JSONArray(response);
+                    for (int i = 0; i < jsonArray.length(); i++) {
+                        JSONObject jsonObject = jsonArray.getJSONObject(i);
+                        String id = jsonObject.getString(RESPONSE_ID);
+                        String name = jsonObject.getString(RESPONSE_NAME);
+                        String htmlUrl = jsonObject.getString(RESPONSE_URL);
+                        Repo repo = new Repo(id, name, htmlUrl);
+                        repos.add(repo);
+                    }
+                } catch (JSONException e) {
+                    e.printStackTrace();
+                }
+            }
+            return repos;
         }
     }
 }
